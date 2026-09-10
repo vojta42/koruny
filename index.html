@@ -39,13 +39,13 @@
 
   <div class="card">
     <label for="isk">Islandské koruny (ISK)</label>
-    <input id="isk" type="number" inputmode="decimal" placeholder="0" autofocus>
+    <input id="isk" type="text" inputmode="decimal" enterkeyhint="done" placeholder="0" autofocus>
     <div class="out" id="czk">0 Kč</div>
   </div>
 
   <div class="card rev">
     <label for="czkIn">Opačně — české koruny (CZK)</label>
-    <input id="czkIn" type="number" inputmode="decimal" placeholder="0">
+    <input id="czkIn" type="text" inputmode="decimal" enterkeyhint="done" placeholder="0">
     <div class="out" id="iskOut">0 ISK</div>
   </div>
 
@@ -60,11 +60,13 @@ const KEY = 'koruny.rate';
 let rate = { value: 0.17322, date: '2026-09-10', cached: true };
 
 const $ = id => document.getElementById(id);
+// Bere tečku i čárku, ignoruje mezery (i pevné) v tisících.
+const parse = v => parseFloat(v.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
 const num = (n, d) => n.toLocaleString('cs-CZ', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 function render() {
-  const isk = parseFloat($('isk').value) || 0;
-  const czk = parseFloat($('czkIn').value) || 0;
+  const isk = parse($('isk').value);
+  const czk = parse($('czkIn').value);
   $('czk').textContent = num(isk * rate.value, 2) + ' Kč';
   $('iskOut').textContent = num(czk / rate.value, 0) + ' ISK';
   const d = new Date(rate.date).toLocaleDateString('cs-CZ');
@@ -83,8 +85,14 @@ fetch(API)
   })
   .catch(() => {});
 
-$('isk').addEventListener('input', render);
-$('czkIn').addEventListener('input', render);
+// Propustí jen číslice a jeden oddělovač, ať se do textového pole nedá napsat nesmysl.
+function clean(e) {
+  const ok = e.target.value.replace(/[^\d.,]/g, '').replace(/([.,])(?=.*[.,])/g, '');
+  if (ok !== e.target.value) e.target.value = ok;
+  render();
+}
+$('isk').addEventListener('input', clean);
+$('czkIn').addEventListener('input', clean);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
