@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Koruny — ISK na CZK</title>
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root { --bg:#0b1220; --card:#141d2e; --fg:#f2f5fa; --muted:#8b9ab3; --accent:#4da3ff; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+    display:flex; flex-direction:column; gap:18px; justify-content:center;
+    background:var(--bg); color:var(--fg);
+    font:16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { margin:0; text-align:center; font-size:15px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+  .card { background:var(--card); border-radius:18px; padding:18px 20px; }
+  label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  input {
+    width:100%; border:0; background:transparent; color:var(--fg);
+    font:700 40px/1.1 inherit; padding:0; outline:none; -moz-appearance:textfield;
+  }
+  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  input::placeholder { color:#3c4a63; }
+  .out { margin-top:10px; padding-top:12px; border-top:1px solid #24314a; font-size:32px; font-weight:700; color:var(--accent); }
+  .rev input { font-size:22px; }
+  .rev .out { font-size:19px; margin-top:8px; padding-top:9px; }
+  #rate { margin:0; text-align:center; font-size:12px; color:var(--muted); }
+  footer { margin-top:6px; text-align:center; font-size:11px; line-height:1.5; color:#5d6b85; }
+</style>
+</head>
+<body>
+  <h1>Koruny</h1>
+
+  <div class="card">
+    <label for="isk">Islandské koruny (ISK)</label>
+    <input id="isk" type="number" inputmode="decimal" placeholder="0" autofocus>
+    <div class="out" id="czk">0 Kč</div>
+  </div>
+
+  <div class="card rev">
+    <label for="czkIn">Opačně — české koruny (CZK)</label>
+    <input id="czkIn" type="number" inputmode="decimal" placeholder="0">
+    <div class="out" id="iskOut">0 ISK</div>
+  </div>
+
+  <p id="rate">Načítám kurz…</p>
+
+  <footer>Věnováno Míše, pro kterou je prý příliš složité<br>napsat i XY ISK to CZK do Googlu.</footer>
+
+<script>
+const API = 'https://api.frankfurter.dev/v1/latest?base=ISK&symbols=CZK';
+const KEY = 'koruny.rate';
+// Záložní kurz pro první spuštění bez internetu.
+let rate = { value: 0.17322, date: '2026-09-10', cached: true };
+
+const $ = id => document.getElementById(id);
+const num = (n, d) => n.toLocaleString('cs-CZ', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function render() {
+  const isk = parseFloat($('isk').value) || 0;
+  const czk = parseFloat($('czkIn').value) || 0;
+  $('czk').textContent = num(isk * rate.value, 2) + ' Kč';
+  $('iskOut').textContent = num(czk / rate.value, 0) + ' ISK';
+  const d = new Date(rate.date).toLocaleDateString('cs-CZ');
+  $('rate').textContent = `1 ISK = ${num(rate.value, 5)} Kč · ECB ${d}` + (rate.cached ? ' · offline' : '');
+}
+
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) rate = { ...s, cached: true }; } catch {}
+render();
+
+fetch(API)
+  .then(r => r.json())
+  .then(d => {
+    rate = { value: d.rates.CZK, date: d.date, cached: false };
+    localStorage.setItem(KEY, JSON.stringify({ value: rate.value, date: rate.date }));
+    render();
+  })
+  .catch(() => {});
+
+$('isk').addEventListener('input', render);
+$('czkIn').addEventListener('input', render);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
