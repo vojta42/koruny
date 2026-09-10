@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Koruny — ISK na CZK</title>
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#08150f">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-  :root { --bg:#0b1220; --card:#141d2e; --fg:#f2f5fa; --muted:#8b9ab3; --accent:#4da3ff; }
+  :root { --bg:#08150f; --card:#11251a; --fg:#eef6f0; --muted:#84a493; --accent:#4fd18b; }
   * { box-sizing:border-box; }
   body {
     margin:0; min-height:100vh; padding:env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
@@ -26,12 +26,13 @@
     font:700 40px/1.1 inherit; padding:0; outline:none; -moz-appearance:textfield;
   }
   input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance:none; }
-  input::placeholder { color:#3c4a63; }
-  .out { margin-top:10px; padding-top:12px; border-top:1px solid #24314a; font-size:32px; font-weight:700; color:var(--accent); }
+  input::placeholder { color:#31533f; }
+  .out { margin-top:10px; padding-top:12px; border-top:1px solid #1d3a2a; font-size:32px; font-weight:700; color:var(--accent); }
   .rev input { font-size:22px; }
   .rev .out { font-size:19px; margin-top:8px; padding-top:9px; }
+  .dec { font-size:.62em; opacity:.75; }
   #rate { margin:0; text-align:center; font-size:12px; color:var(--muted); }
-  footer { margin-top:6px; text-align:center; font-size:11px; line-height:1.5; color:#5d6b85; }
+  footer { margin-top:6px; text-align:center; font-size:11px; line-height:1.5; color:#5e7d6b; }
 </style>
 </head>
 <body>
@@ -51,7 +52,7 @@
 
   <p id="rate">Načítám kurz…</p>
 
-  <footer>Věnováno Míše, pro kterou je prý příliš složité<br>napsat i XY ISK to CZK do Googlu.</footer>
+  <footer>Věnováno Míše, pro kterou je prý příliš složité<br>napsat i „XY ISK to CZK“ do Googlu.</footer>
 
 <script>
 const API = 'https://api.frankfurter.dev/v1/latest?base=ISK&symbols=CZK';
@@ -63,11 +64,16 @@ const $ = id => document.getElementById(id);
 // Bere tečku i čárku, ignoruje mezery (i pevné) v tisících.
 const parse = v => parseFloat(v.replace(/[\s\u00a0]/g, '').replace(',', '.')) || 0;
 const num = (n, d) => n.toLocaleString('cs-CZ', { minimumFractionDigits: d, maximumFractionDigits: d });
+// Celá část zůstává velká, haléře jdou menším písmem.
+const split = (n, unit) => {
+  const [w, dec] = num(n, 2).split(',');
+  return `${w}<span class="dec">,${dec} ${unit}</span>`;
+};
 
 function render() {
   const isk = parse($('isk').value);
   const czk = parse($('czkIn').value);
-  $('czk').textContent = num(isk * rate.value, 2) + ' Kč';
+  $('czk').innerHTML = split(isk * rate.value, 'Kč');
   $('iskOut').textContent = num(czk / rate.value, 0) + ' ISK';
   const d = new Date(rate.date).toLocaleDateString('cs-CZ');
   $('rate').textContent = `1 ISK = ${num(rate.value, 5)} Kč · ECB ${d}` + (rate.cached ? ' · offline' : '');
@@ -93,6 +99,12 @@ function clean(e) {
 }
 $('isk').addEventListener('input', clean);
 $('czkIn').addEventListener('input', clean);
+// Android klávesnici otevře rovnou; iOS ji bez dotyku nepovolí, tak stačí první tapnutí kamkoliv.
+const isk = $('isk');
+isk.focus();
+addEventListener('pointerdown', e => {
+  if (e.target.tagName !== 'INPUT') { e.preventDefault(); isk.focus(); }
+}, { once: true });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
