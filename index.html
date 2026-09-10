@@ -76,7 +76,8 @@ function render() {
   $('czk').innerHTML = split(isk * rate.value, 'Kč');
   $('iskOut').textContent = num(czk / rate.value, 0) + ' ISK';
   const d = new Date(rate.date).toLocaleDateString('cs-CZ');
-  $('rate').textContent = `1 ISK = ${num(rate.value, 5)} Kč · ECB ${d}` + (rate.cached ? ' · offline' : '');
+  $('rate').textContent = `1 ISK = ${num(rate.value, 5)} Kč · 1 Kč = ${num(1 / rate.value, 3)} ISK · ECB ${d}`
+    + (rate.cached ? ' · offline' : '');
 }
 
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) rate = { ...s, cached: true }; } catch {}
